@@ -1,5 +1,6 @@
 import requests
 
+#ver si no esta entregado o retornando a sucursal o pup
 
 #Retorna Route detail a desactivar
 def RdID(data,package):
@@ -41,13 +42,13 @@ def changeStatus(package_id,package_state,headers):
         "reference":"delete_last_package_state_history",
         "action":"delete_last_package_state_history"
     }
-
+    #ver si tengo un estado listo o listo para despacho en packagestatehistory, saco posicion 
     #URL Package states
     urlPS = 'https://release--api.clicoh.com/api/v1/pickup_points/packages/{}/'.format(str(package_id))
 
     while package_state != 11 and package_state != 21:
         requests.post(urlMC, headers = headers, json = body)
-        responsePS = requests.get(urlPS, headers=headers).json()
+        responsePS = requests.get(urlPS, headers=headers).json()          #me ahorro esto
         package_state = responsePS['current_state']['state']['id']
 
     return
@@ -74,20 +75,18 @@ headers = {'Authorization': 'Bearer ' + token}
 
 #Completar codigo y ruta del paquete a desactivar
 routedetails_array = [
-    ['GSNRV84102',28245],
-    ['HWAST38249',28245],
-    ['DTXLE95724',28245],
-    ['MPZJK92863',28245]
-
-    ]
-
-for i in range(len(routedetails_array)):
-    makeRequest(
-        routedetails_array[i][1],
-        routedetails_array[i][0],
-        headers
-    )
+    ['CLGJN73158',28242],
+    ['HWAST38249',28242],
+    ['EMGLY48593',28242],
+    ['LPJUY50264',28242],
+    ['afdafdsaf',28242]   
+]
 
 
-
-
+if __name__ == '__main__':
+    for i in range(len(routedetails_array)):
+        makeRequest(
+            routedetails_array[i][1],
+            routedetails_array[i][0],
+            headers
+     )

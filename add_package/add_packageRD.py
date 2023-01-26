@@ -12,8 +12,8 @@ for i in range(len(package_to_route)):
     print(package_to_route[i][1])
 
 route_state_dic = {
-    '5' : 6,                    #travelling
-    '6' : 7                     #delivered
+    '5' : 6,                #travelling
+    '6' : 7                 #delivered
 }
 
 package_states_list = [ 
