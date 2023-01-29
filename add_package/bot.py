@@ -1,14 +1,16 @@
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
-import time
 from selenium.webdriver.support.select import Select
+from re import search
+import time
 
 
-def basic_config_auth():
+def add_route_details(data: list):
     driver = webdriver.Chrome('./chromedriver')
 
-    # Accede a routedetails_add
+    start_time = time.time()
+
+    # Accede a route details add
     driver.get("https://release--api.clicoh.com/admin/driver/routedetail/add/")
 
     driver.implicitly_wait(10)
@@ -16,59 +18,63 @@ def basic_config_auth():
     # Auth
     driver.find_element(By.XPATH, "//input[@type='text'][contains(@id,'username')]").send_keys("admin")
     driver.find_element(By.XPATH, "//input[@type='password'][contains(@id,'password')]").send_keys("P4t4g0n14-99")
-    time.sleep(1)
     driver.find_element(By.XPATH, "//input[contains(@type,'submit')]").click()
 
-    return driver
+    driver.implicitly_wait(10)
 
+    for i in range(len(data)):
 
-# Crear routes details
-def add_route_details(driver, n, route_id, package_code, stop_number):
-    for i in range(n):
-        driver.implicitly_wait(10)
+        for n in range(len(data[i][1])):
 
-        # Click en ruta
-        driver.find_element(By.XPATH, "//span[contains(@aria-labelledby,'select2-id_route-container')]").click()
+            driver.implicitly_wait(10)
 
-        # Busca ruta
-        driver.find_element(By.XPATH, "//input[contains(@class,'select2-search__field')]").send_keys(route_id)
+            # add route
+            driver.find_element(By.XPATH, "//span[contains(@aria-labelledby,'select2-id_route-container')]").click()
+            driver.find_element(By.XPATH, "//input[contains(@class,'select2-search__field')]").send_keys(data[i][0])
+            while not search(data[i][0], driver.find_element(By.XPATH, "(//li[contains(@role,'treeitem')])[1]").text):
+                time.sleep(.5)
+            driver.find_element(By.XPATH, "(//li[contains(@role,'treeitem')])[1]").click()
+
+            # add package
+            driver.find_element(By.XPATH, "//span[contains(@aria-labelledby,'select2-id_package-container')]").click()
+            driver.find_element(By.XPATH, "//input[contains(@class,'select2-search__field')]").send_keys(data[i][1][n])
+            while not search(data[i][1][n],
+                             driver.find_element(By.XPATH, "(//li[contains(@role,'treeitem')])[1]").text):
+                time.sleep(.6)
+            driver.find_element(By.XPATH, "(//li[contains(@role,'treeitem')])[1]").click()
+
+            # Select payload type
+            select_payload = driver.find_element(By.XPATH, "//select[contains(@id,'id_payload_type')]")
+            select = Select(select_payload)
+            select.select_by_index("1")
+
+            # Add stop number
+            driver.find_element(By.XPATH, "//input[@type='number'][contains(@id,'number')]").clear()
+            driver.find_element(By.XPATH, "//input[@type='number'][contains(@id,'number')]").send_keys(data[i][2] + n)
+
+            # Post route_Detail
+            driver.find_element(By.XPATH, "//input[@value='Save']").click()
+
+            driver.get("https://release--api.clicoh.com/admin/driver/routedetail/add/")
+
+    # Route sync
+    for i in range(len(data)):
+        driver.get("https://release--api.clicoh.com/admin/driver/route/")
+        driver.find_element(By.XPATH, "//input[contains(@type,'text')]").send_keys(data[i][0])
+        driver.find_element(By.XPATH, "//input[contains(@type,'submit')]").click()
+        driver.find_element(By.XPATH, "//input[contains(@name,'_selected_action')]").click()
+        select_action = driver.find_element(By.XPATH, "//select[contains(@name,'action')]")
+        select = Select(select_action)
+        select.select_by_index("2")
         time.sleep(5)
+        driver.find_element(By.XPATH, "//button[@type='submit'][contains(.,'Go')]").click()
 
-        # Click en el primer elemento
-        driver.find_element(By.XPATH, "(//li[contains(@role,'treeitem')])[1]").click()
-
-        # Click on package
-        driver.find_element(By.XPATH, "//span[contains(@aria-labelledby,'select2-id_package-container')]").click()
-
-        # Escribe codigo paquete
-        driver.find_element(By.XPATH, "//input[contains(@class,'select2-search__field')]").send_keys(package_code)
-        time.sleep(15)
-
-        # Click en el primer elemento
-        driver.find_element(By.XPATH, "(//li[contains(@role,'treeitem')])[1]").click()
-
-        # Click en payload type
-        select_payload = driver.find_element(By.XPATH, "//select[contains(@id,'id_payload_type')]")
-        select = Select(select_payload)
-        select.select_by_index("1")
-        time.sleep(1)
-
-        # borra stop number
-        driver.find_element(By.XPATH, "//input[@type='number'][contains(@id,'number')]").clear()
-        time.sleep(1)
-
-        # Escribe stop number
-        driver.find_element(By.XPATH, "//input[@type='number'][contains(@id,'number')]").send_keys(stop_number)
-        time.sleep(2)
-
-        # Guarda route detail
-        driver.find_element(By.XPATH, "//input[@value='Save']").click()
-        time.sleep(6)
-
-        # Accede a routedetails_add
-        driver.get("https://release--api.clicoh.com/admin/driver/routedetail/add/")
-
-    driver.exit()
+    elapsed_time = time.time() - start_time
+    print("Elapsed time: %.3f seconds." % elapsed_time)
 
 
-##//li[@class='select2-results__option loading-results'][contains(.,'Searching…')]
+data = [
+    ["29512", ["XYLOH05481", "YHSVM97681"], 1],
+]
+
+add_route_details(data)

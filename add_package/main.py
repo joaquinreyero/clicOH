@@ -1,24 +1,13 @@
-#from logic import ok,route,ok_packages
+import gspread
+from logic import route_ok, package_ok
+from oauth2client.service_account import ServiceAccountCredentials
 
+scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 
-if __name__ == "__main__":  
+creds = ServiceAccountCredentials.from_json_keyfile_name('./client_secret_656259280327-i9iibttp2aamulak49ap9p4dhof0uvhi.apps.googleusercontent.com.json', scope)
+client = gspread.authorize(creds)
 
-    data = [
-        ['code',1],
-        ['code',234],
-        ['code',324],
-        ['code',1],
-        ['code',1],
-    
-    ]   
+sheet = client.open("test").get_worksheet(0)
 
-    routes = []
-    for i in range(len(data)):
-        routes.append(data[i][1])
-    for i in range(len(set(routes))):
-        print(i)
-
-
-    # Resultado: [1, 2, 3, 4, 5]
-
-    #ok_packages(data)
+data = sheet.get_all_values()
+print(data)
