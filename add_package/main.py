@@ -1,114 +1,190 @@
 import gspread
 from bot import add_route_details
-from logic import route_ok_for_add, package_ok_for_add, change_state
+from logic import route_ok_for_add, package_ok_for_add, change_state, get_route_details_id, deactivate_route_detail
 from oauth2client.service_account import ServiceAccountCredentials
 import time
 
-start_time = time.time()
 
-# sheet configs
-scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_name('./add-route-details-860641dac2c6.json', scope)
-client = gspread.authorize(creds)
-sheet = client.open("TMS").get_worksheet(0)
+def add_package(cell_add_package_route, cell_add_package_package, cells_add_package):
+    # Convert cells to simple list and create a set, ROUTE
+    add_route_list, add_package_list, = [], []
 
-# get add package and deactivate route details from sheets
-cells = sheet.get_values('B6:C52')
-cell_add_package_route = sheet.get_values('B6:B52')
-cell_add_package_package = sheet.get_values('C6:C52')
+    for i in cell_add_package_route:
+        add_route_list.extend(i)
+    add_route_unique = set(add_route_list)
+    route_list = list(add_route_unique)
 
-route_list, package_list = [], []
-# convert cells to simple list and create a set, ROUTE
-for sub_list in cell_add_package_route:
-    route_list.extend(sub_list)
-unique_route = set(route_list)
-route_list = list(unique_route)
+    # Convert cells to simple list and create a set, PACKAGE
+    for i in cell_add_package_package:
+        add_package_list.extend(i)
+    add_package_unique = set(add_package_list)
 
-# convert cells to simple list and create a set, PACKAGE
-for sub_list in cell_add_package_package:
-    package_list.extend(sub_list)
-unique_package = set(package_list)
+    # Create a list of correct routes
+    add_route_ok, add_package_ok = [], []
 
-route_ok = [
-]
-for i in range(len(route_list)):
-    a = route_ok_for_add(route_list[i])
-    if a[0]:
-        route_ok.append(a)
+    for i in range(len(route_list)):
+        response = route_ok_for_add(route_list[i])
+        if response[0]:
+            add_route_ok.append(response)
 
-package_ok = [
+    # Create a list of correct package
+    for i in range(len(add_package_list)):
+        for j in range(len(add_route_ok)):
+            if cells_add_package[i][0] in add_route_ok[j]:
+                a = package_ok_for_add(cells_add_package[i][1], cells_add_package[i][0])
+                if a[0]:
+                    add_package_ok.append(a)
 
-]
-for i in range(len(package_list)):
-    for j in range(len(route_ok)):
-        if cells[i][0] in route_ok[j]:
-            a = package_ok_for_add(cells[i][1], cells[i][0])
-            if a[0]:
-                package_ok.append(a)
+    # Create a list of package for Selenium
+    package_bot_add = []
+    for i in range(len(add_package_ok)):
+        code = add_package_ok[i][1]
+        route = add_package_ok[i][3]
+        package_bot_add.append([route, code])
 
-package_bot_add = []
+    # Create a list of unique route for Selenium
+    add_unique_route = []
+    for i in range(len(add_route_ok)):
+        add_unique_route.append(add_route_ok[i][1])
 
-for i in range(len(package_ok)):
-    code = package_ok[i][1]
-    route = package_ok[i][3]
-    package_bot_add.append([route, code])
+    # Create groups by package states
+    group_stage_1 = [
+        'traveling_mid_mile',
+        'on_lookup_batch',
+        '1st_mile'
+    ]
+    group_stage_2 = [
+        'ready'
+    ]
+    group_stage_3 = [
+        'at_destination',
+        'dispatched'
+    ]
+    group_stage_4 = [
+        'last_mile'
+    ]
 
-unique_route = [
+    # Sort package by group
+    package_by_group_stage_1, package_by_group_stage_2, package_by_group_stage_3, package_by_group_stage_4 = [], [], [], []
 
-]
-for i in range(len(route_ok)):
-    unique_route.append(route_ok[i][1])
+    for i in range(len(add_package_ok)):
 
-add_route_details(package_bot_add, unique_route)
+        if add_package_ok[i][2] in group_stage_1:
+            package_by_group_stage_1.append(add_package_ok[i][4])
 
-group_x = [
-    'traveling_mid_mile',
-    'on_lookup_batch',
-    '1st_mile'
-]
-group_x_add = [
+        if add_package_ok[i][2] in group_stage_2:
+            package_by_group_stage_2.append(add_package_ok[i][4])
 
-]
-group_r_add = [
+        if add_package_ok[i][2] in group_stage_3:
+            package_by_group_stage_3.append(add_package_ok[i][4])
 
-]
-group_at = [
-    'at_destination',
-    'dispatched'
-]
-group_at_add = [
+    # checks if the list is empty, changes the state of the package and therefore adds the packages to the next group
+    if package_by_group_stage_1:
+        change_state(package_by_group_stage_1, 'ready')
+        package_by_group_stage_2.extend(package_by_group_stage_1)
 
-]
+    if package_by_group_stage_2:
+        change_state(package_by_group_stage_2, 'at_destination')
+        package_by_group_stage_3.extend(package_by_group_stage_2)
 
-for i in range(len(package_ok)):
+    if package_by_group_stage_3:
+        change_state(package_by_group_stage_3, 'last_mile')
 
-    if package_ok[i][2] in group_x:
-        group_x_add.append(package_ok[i][4])
-
-    if package_ok[i][2] == 'ready':
-        group_r_add.append(package_ok[i][4])
-
-    if package_ok[i][2] in group_at:
-        group_at_add.append(package_ok[i][4])
-
-if group_x_add:
-    change_state(group_x_add, 'ready')
-    group_r_add.extend(group_x_add)
-
-if group_at_add:
-    change_state(group_r_add, 'at_destination')
-    group_at_add.extend(group_r_add)
-
-if group_at_add:
-    change_state(group_at_add, 'last_mile')
-
-elapsed_time = time.time() - start_time
-
-cell_delete = sheet.range("B6:C52")
-for cell in cell_delete:
-    cell.value = ""
-
-# sheet.update_cells(cell_delete)
+    # Call Selenium
+    if package_bot_add and add_package_unique:
+        add_route_details(package_bot_add, add_unique_route)
 
 
-print("Execution time: {} ".format(elapsed_time))
+def deactivate_route_details(cell_deactivate_route_route, cell_deactivate_route_package,
+                             cells_deactivate_route_details):
+    # Convert cells to simple list and create a set, ROUTE
+    deactivate_route_list, deactivate_package_list, = [], []
+
+    for i in cell_deactivate_route_route:
+        deactivate_route_list.extend(i)
+    deactivate_route_unique = set(deactivate_route_list)
+    route_list = list(deactivate_route_unique)
+
+    # Convert cells to simple list and create a set, PACKAGE
+    for i in cell_deactivate_route_package:
+        deactivate_package_list.extend(i)
+    add_package_unique = set(deactivate_package_list)
+    package_list = list(deactivate_package_list)
+
+    # Get route details ids
+    routes_details_response = []
+    for i in range(len(route_list)):
+        routes_details_response = (get_route_details_id(route_list[i], package_list))
+
+    # Create a list of package
+    routes_details_id, package_id_list = [], []
+    for i in range(len(routes_details_response)):
+        routes_details_id.append(routes_details_response[i][1])
+        package_id_list.append([routes_details_response[i][2], routes_details_response[i][3]])
+
+    bad_package_status = [
+        'at_destination'
+        'ready'
+        'delivered',
+        'canceled',
+        'arrived'
+    ]
+
+    package_id_for_change = []
+
+    for i in range(len(routes_details_id)):
+        deactivate_route_detail(routes_details_id[i])
+        if package_id_list[i][1] not in bad_package_status:
+            package_id_for_change.append(package_id_list[i][0])
+
+    if package_id_for_change:
+        change_state(package_id_for_change, 'ready')
+    else:
+        print("cant find packages")
+
+
+def main():
+    start_time = time.time()
+
+    # Sheet configs
+    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+    creds = ServiceAccountCredentials.from_json_keyfile_name('./add-route-details-860641dac2c6.json', scope)
+    client = gspread.authorize(creds)
+    sheet = client.open("TMS").get_worksheet(0)
+
+    # Get add package
+    cells_add_package = sheet.get_values('B6:C52')
+    cell_add_package_route = sheet.get_values('B6:B52')
+    cell_add_package_package = sheet.get_values('C6:C52')
+
+    # Get deactivate route details
+    cells_deactivate_route_details = sheet.get_values('E6:F52')
+    cell_deactivate_route_route = sheet.get_values('E6:E52')
+    cell_deactivate_route_package = sheet.get_values('F6:F52')
+
+    if cells_deactivate_route_details:
+        deactivate_route_details(cell_deactivate_route_route, cell_deactivate_route_package,
+                                 cells_deactivate_route_details)
+
+    if cells_add_package:
+        add_package(cell_add_package_route, cell_add_package_package, cells_add_package)
+
+    # Update sheet
+    cell_delete_a = sheet.range("B6:C52")
+    if cell_delete_a:
+        for cell in cell_delete_a:
+            cell.value = ""
+        sheet.update_cells(cell_delete_a)
+
+    cell_delete_b = sheet.range("E6:F52")
+    if cell_delete_b:
+        for cell in cell_delete_b:
+            cell.value = ""
+        sheet.update_cells(cell_delete_b)
+
+    elapsed_time = time.time() - start_time
+    print("Execution time: {} ".format(elapsed_time))
+
+
+if __name__ == "__main__":
+    main()
