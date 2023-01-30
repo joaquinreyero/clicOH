@@ -50,7 +50,6 @@ posible alguna de las acciones nos muestra el error que tiene.
 5. El paquete debe estar en alguno de los siguientes estados: **traveling_mid_mile** , **on_lookup_batch**, **1st_mile**, **ready**, **at_destination**, **dispatched** o **last_mile**
 6. El paquete **no** debe estar ya **incluido** en la ruta.
 
-
 ## Desactivar route details
 La funcion toma de la sheet rutas y paquetes de las respectivas columnas, desactiva los routes details que se requieran
 y deja los paquetes en un estado valido para rutearse nuevamente, siempre y cuando estos estados no sean: canceled, delivered o arrived.
@@ -67,3 +66,4 @@ y deja los paquetes en un estado valido para rutearse nuevamente, siempre y cuan
 2. **Robustez**
 2. **Refactor** 
 3. **Mejorar tiempos de ejecución**
+5. **Hacer alguna metrica**

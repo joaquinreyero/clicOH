@@ -118,11 +118,15 @@ def get_route_details_id(route_id: str, package_code: list):
 
             for j in range(len(package_code)):
 
-                if data['details'][i]['package']['code'] == package_code[j] or data['details'][i]['package'][
-                    'reference_code'] == package_code[j]:
-                    route_details_id.append((data['details'][i]['id']))
-                    package_id.append(data['details'][i]['package']['id'])
-                    package_state.append(data['details'][i]['package']['current_state']['state']['name'])
-                    response_list.append([package_code[j], route_details_id[j], package_id[j], package_state[j]])
+                if data['details'][i]['package']['code'] == package_code[j] or data['details'][i]['package']['reference_code'] == package_code[j]:
 
-        return response_list
+                    response_list.append(package_code[j])
+                    response_list.append((data['details'][i]['id']))
+                    response_list.append(data['details'][i]['package']['id'])
+                    response_list.append(data['details'][i]['package']['current_state']['state']['name'])
+
+        sublist = [response_list[i:i + 4] for i in range(0, len(response_list), 4)]
+
+        return sublist
+
+
