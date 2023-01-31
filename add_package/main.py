@@ -1,14 +1,14 @@
 import gspread
-from bot import add_route_details
+from bot import add_route_details,sync_route
 from logic import route_ok_for_add, package_ok_for_add, change_state, get_route_details_id, deactivate_route_detail
 from oauth2client.service_account import ServiceAccountCredentials
 import time
 
 
 def add_package(cell_add_package_route, cell_add_package_package, cells_add_package):
+
     # Convert cells to simple list and create a set, ROUTE
     add_route_list, add_package_list, = [], []
-
     for i in cell_add_package_route:
         add_route_list.extend(i)
     add_route_unique = set(add_route_list)
@@ -17,7 +17,6 @@ def add_package(cell_add_package_route, cell_add_package_package, cells_add_pack
     # Convert cells to simple list and create a set, PACKAGE
     for i in cell_add_package_package:
         add_package_list.extend(i)
-    add_package_unique = set(add_package_list)
 
     # Create a list of correct routes
     add_route_ok, add_package_ok = [], []
@@ -27,10 +26,15 @@ def add_package(cell_add_package_route, cell_add_package_package, cells_add_pack
         if response[0]:
             add_route_ok.append(response)
 
+    # Create a list of correct route ids
+    route_id = []
+    for i in range(len(add_route_ok)):
+        route_id.append(add_route_ok[i][1])
+
     # Create a list of correct package
     for i in range(len(add_package_list)):
         for j in range(len(add_route_ok)):
-            if cells_add_package[i][0] in add_route_ok[j]:
+            if cells_add_package[i][0] in route_id:
                 a = package_ok_for_add(cells_add_package[i][1], cells_add_package[i][0])
                 if a[0]:
                     add_package_ok.append(a)
@@ -41,11 +45,6 @@ def add_package(cell_add_package_route, cell_add_package_package, cells_add_pack
         code = add_package_ok[i][1]
         route = add_package_ok[i][3]
         package_bot_add.append([route, code])
-
-    # Create a list of unique route for Selenium
-    add_unique_route = []
-    for i in range(len(add_route_ok)):
-        add_unique_route.append(add_route_ok[i][1])
 
     # Create groups by package states
     group_stage_1 = [
@@ -80,23 +79,22 @@ def add_package(cell_add_package_route, cell_add_package_package, cells_add_pack
 
     # checks if the list is empty, changes the state of the package and therefore adds the packages to the next group
     if package_by_group_stage_1:
-        change_state(package_by_group_stage_1, 'ready')
+        # change_state(package_by_group_stage_1, 'ready')
         package_by_group_stage_2.extend(package_by_group_stage_1)
 
     if package_by_group_stage_2:
-        change_state(package_by_group_stage_2, 'at_destination')
+        # change_state(package_by_group_stage_2, 'at_destination')
         package_by_group_stage_3.extend(package_by_group_stage_2)
 
     if package_by_group_stage_3:
         change_state(package_by_group_stage_3, 'last_mile')
-
     # Call Selenium
-    if package_bot_add and add_package_unique:
-        add_route_details(package_bot_add, add_unique_route)
+    if package_bot_add:
+        add_route_details(package_bot_add, route_id)
 
 
-def deactivate_route_details(cell_deactivate_route_route, cell_deactivate_route_package,
-                             cells_deactivate_route_details):
+def deactivate_route_details(cell_deactivate_route_route, cell_deactivate_route_package):
+
     # Convert cells to simple list and create a set, ROUTE
     deactivate_route_list, deactivate_package_list, = [], []
 
@@ -108,13 +106,18 @@ def deactivate_route_details(cell_deactivate_route_route, cell_deactivate_route_
     # Convert cells to simple list and create a set, PACKAGE
     for i in cell_deactivate_route_package:
         deactivate_package_list.extend(i)
-    add_package_unique = set(deactivate_package_list)
     package_list = list(deactivate_package_list)
 
     # Get route details ids
     routes_details_response = []
     for i in range(len(route_list)):
         routes_details_response = (get_route_details_id(route_list[i], package_list))
+
+    # Create a list of routes
+    routes_id = []
+    print(routes_details_response)
+    for i in range(len(routes_details_response)):
+        routes_id.append(routes_details_response[i][4])
 
     # Create a list of package
     routes_details_id, package_id_list = [], []
@@ -123,8 +126,6 @@ def deactivate_route_details(cell_deactivate_route_route, cell_deactivate_route_
         package_id_list.append([routes_details_response[i][2], routes_details_response[i][3]])
 
     bad_package_status = [
-        'at_destination'
-        'ready'
         'delivered',
         'canceled',
         'arrived'
@@ -139,6 +140,7 @@ def deactivate_route_details(cell_deactivate_route_route, cell_deactivate_route_
 
     if package_id_for_change:
         change_state(package_id_for_change, 'ready')
+        sync_route(routes_id)
     else:
         print("cant find packages")
 
@@ -162,25 +164,24 @@ def main():
     cell_deactivate_route_route = sheet.get_values('E6:E52')
     cell_deactivate_route_package = sheet.get_values('F6:F52')
 
-    if cells_deactivate_route_details:
-        deactivate_route_details(cell_deactivate_route_route, cell_deactivate_route_package,
-                                 cells_deactivate_route_details)
-
     if cells_add_package:
         add_package(cell_add_package_route, cell_add_package_package, cells_add_package)
+
+    if cells_deactivate_route_details:
+        deactivate_route_details(cell_deactivate_route_route, cell_deactivate_route_package)
 
     # Update sheet
     cell_delete_a = sheet.range("B6:C52")
     if cell_delete_a:
         for cell in cell_delete_a:
             cell.value = ""
-        sheet.update_cells(cell_delete_a)
+        # sheet.update_cells(cell_delete_a)
 
     cell_delete_b = sheet.range("E6:F52")
     if cell_delete_b:
         for cell in cell_delete_b:
             cell.value = ""
-        sheet.update_cells(cell_delete_b)
+        # sheet.update_cells(cell_delete_b)
 
     elapsed_time = time.time() - start_time
     print("Execution time: {} ".format(elapsed_time))
