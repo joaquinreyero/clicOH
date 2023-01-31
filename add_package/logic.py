@@ -32,12 +32,11 @@ def package_ok_for_add(package_code: str, route_id: str):
         'ready',
         'at_destination',
         'dispatched',
-        'last_mile'
     ]
     package_state = response["results"][0]["current_state"]["state"]["name"]
 
     if package_state not in ok_states:
-        print(f"Package {package_code} with a invalid state")
+        print(f"Package {package_code} with a invalid state {package_state}")
         return False, None, None, None, None
 
     return True, package_code, package_state, route_id, package_id
@@ -60,7 +59,7 @@ def route_ok_for_add(route_id: str):
     route_state = response_dic["current_state"]["state"]["name"]
 
     if route_state != "traveling":
-        print(f"Invalid route {route_id}, state :{route_state}")
+        print(f"Invalid route {route_id}, state {route_state}")
         return False, None
 
     return True, route_id
@@ -107,17 +106,16 @@ def get_route_details_id(route_id: str, package_code: list):
     else:
         data = response.json()
         for i in range(len(data['details'])):
-            for j in range(len(package_code)):
-                if data['details'][i]['package']['code'] == package_code[j] or data['details'][i]['package'][
-                    'reference_code'] == package_code[j]:
+            if data['details'][i]['package']['code'] in package_code \
+                    or data['details'][i]['package']['reference_code'] in package_code:
 
-                    response_list.append(package_code[j])
-                    response_list.append((data['details'][i]['id']))
-                    response_list.append(data['details'][i]['package']['id'])
-                    response_list.append(data['details'][i]['package']['current_state']['state']['name'])
-                    response_list.append(route_id)
+                response_list.append(data['details'][i]['package']['code'])
+                response_list.append((data['details'][i]['id']))
+                response_list.append(data['details'][i]['package']['id'])
+                response_list.append(data['details'][i]['package']['current_state']['state']['name'])
+                response_list.append(route_id)
 
         sublist = [response_list[i:i + 5] for i in range(0, len(response_list), 5)]
         if not sublist:
-            print(f"Cant find any of these package {package_code}")
+            print(f"Cant find any of these package {package_code} in the route {route_id}")
         return sublist

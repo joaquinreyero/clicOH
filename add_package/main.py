@@ -91,6 +91,7 @@ def add_package(cell_add_package_route, cell_add_package_package, cells_add_pack
     # Call Selenium
     if package_bot_add:
         add_route_details(package_bot_add, route_id)
+        print(f"These package have been added {add_package_ok}")
 
 
 def deactivate_route_details(cell_deactivate_route_route, cell_deactivate_route_package):
@@ -115,7 +116,6 @@ def deactivate_route_details(cell_deactivate_route_route, cell_deactivate_route_
 
     # Create a list of routes
     routes_id = []
-    print(routes_details_response)
     for i in range(len(routes_details_response)):
         routes_id.append(routes_details_response[i][4])
 
@@ -132,7 +132,6 @@ def deactivate_route_details(cell_deactivate_route_route, cell_deactivate_route_
     ]
 
     package_id_for_change = []
-
     for i in range(len(routes_details_id)):
         deactivate_route_detail(routes_details_id[i])
         if package_id_list[i][1] not in bad_package_status:
@@ -141,8 +140,9 @@ def deactivate_route_details(cell_deactivate_route_route, cell_deactivate_route_
     if package_id_for_change:
         change_state(package_id_for_change, 'ready')
         sync_route(routes_id)
+        print(f"Routes {routes_id} have been sync")
     else:
-        print("cant find packages")
+        print("Any route details have been deactivated")
 
 
 def main():
@@ -175,13 +175,13 @@ def main():
     if cell_delete_a:
         for cell in cell_delete_a:
             cell.value = ""
-        # sheet.update_cells(cell_delete_a)
+        sheet.update_cells(cell_delete_a)
 
     cell_delete_b = sheet.range("E6:F52")
     if cell_delete_b:
         for cell in cell_delete_b:
             cell.value = ""
-        # sheet.update_cells(cell_delete_b)
+        sheet.update_cells(cell_delete_b)
 
     elapsed_time = time.time() - start_time
     print("Execution time: {} ".format(elapsed_time))
