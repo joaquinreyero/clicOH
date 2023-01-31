@@ -1,12 +1,11 @@
 import gspread
-from bot import add_route_details,sync_route
+from bot import add_route_details, sync_route
 from logic import route_ok_for_add, package_ok_for_add, change_state, get_route_details_id, deactivate_route_detail
 from oauth2client.service_account import ServiceAccountCredentials
 import time
 
 
 def add_package(cell_add_package_route, cell_add_package_package, cells_add_package):
-
     # Convert cells to simple list and create a set, ROUTE
     add_route_list, add_package_list, = [], []
     for i in cell_add_package_route:
@@ -40,11 +39,12 @@ def add_package(cell_add_package_route, cell_add_package_package, cells_add_pack
                     add_package_ok.append(a)
 
     # Create a list of package for Selenium
-    package_bot_add = []
+    package_bot_add, package_code = [], []
     for i in range(len(add_package_ok)):
         code = add_package_ok[i][1]
         route = add_package_ok[i][3]
         package_bot_add.append([route, code])
+        package_code.append(code)
 
     # Create groups by package states
     group_stage_1 = [
@@ -58,9 +58,6 @@ def add_package(cell_add_package_route, cell_add_package_package, cells_add_pack
     group_stage_3 = [
         'at_destination',
         'dispatched'
-    ]
-    group_stage_4 = [
-        'last_mile'
     ]
 
     # Sort package by group
@@ -79,23 +76,22 @@ def add_package(cell_add_package_route, cell_add_package_package, cells_add_pack
 
     # checks if the list is empty, changes the state of the package and therefore adds the packages to the next group
     if package_by_group_stage_1:
-        # change_state(package_by_group_stage_1, 'ready')
+        change_state(package_by_group_stage_1, 'ready', package_code)
         package_by_group_stage_2.extend(package_by_group_stage_1)
 
     if package_by_group_stage_2:
-        # change_state(package_by_group_stage_2, 'at_destination')
+        change_state(package_by_group_stage_2, 'at_destination', package_code)
         package_by_group_stage_3.extend(package_by_group_stage_2)
 
     if package_by_group_stage_3:
-        change_state(package_by_group_stage_3, 'last_mile')
+        change_state(package_by_group_stage_3, 'last_mile', package_code)
     # Call Selenium
     if package_bot_add:
         add_route_details(package_bot_add, route_id)
-        print(f"These package have been added {add_package_ok}")
+        print(f"These package have been added {package_bot_add}")
 
 
 def deactivate_route_details(cell_deactivate_route_route, cell_deactivate_route_package):
-
     # Convert cells to simple list and create a set, ROUTE
     deactivate_route_list, deactivate_package_list, = [], []
 
@@ -120,8 +116,9 @@ def deactivate_route_details(cell_deactivate_route_route, cell_deactivate_route_
         routes_id.append(routes_details_response[i][4])
 
     # Create a list of package
-    routes_details_id, package_id_list = [], []
+    routes_details_id, package_id_list, package_code = [], [], []
     for i in range(len(routes_details_response)):
+        package_code.append(routes_details_response[i][0])
         routes_details_id.append(routes_details_response[i][1])
         package_id_list.append([routes_details_response[i][2], routes_details_response[i][3]])
 
@@ -133,12 +130,12 @@ def deactivate_route_details(cell_deactivate_route_route, cell_deactivate_route_
 
     package_id_for_change = []
     for i in range(len(routes_details_id)):
-        deactivate_route_detail(routes_details_id[i])
+        deactivate_route_detail(routes_details_id[i], package_code[i])
         if package_id_list[i][1] not in bad_package_status:
             package_id_for_change.append(package_id_list[i][0])
 
     if package_id_for_change:
-        change_state(package_id_for_change, 'ready')
+        change_state(package_id_for_change, 'ready', package_id_for_change)
         sync_route(routes_id)
         print(f"Routes {routes_id} have been sync")
     else:

@@ -65,7 +65,7 @@ def route_ok_for_add(route_id: str):
     return True, route_id
 
 
-def change_state(data: list, state: str):
+def change_state(data: list, state: str, code: list):
     url = "https://release--api.clicoh.com/api/v1/pickup_points/packages/massive_changes/"
     payload = json.dumps(
         {
@@ -83,18 +83,18 @@ def change_state(data: list, state: str):
     if response.status_code != 200:
         print(f"Error trying to change {data} states to {state}")
         return
-    print(f"Packages {data} transitioned successfully to {state}")
+    print(f"Packages {code} transitioned successfully to {state}")
 
 
-def deactivate_route_detail(route_details_id: str):
+def deactivate_route_detail(route_details_id: str, package_code: str):
     url = f'https://release--api.clicoh.com/api/v1/driver/route_details/{route_details_id}/'
     body = {'is_active': 'false'}
     deactivate = requests.patch(url, headers=headers, data=body)
     if deactivate.status_code == 200:
-        print(f"Route details {route_details_id} deactivated")
+        print(f"Route details {route_details_id} deactivated of package {package_code}")
         return
 
-    print(f'Error {deactivate.status_code} while deactivating route {route_details_id}')
+    print(f'Error {deactivate.status_code} while deactivating route {route_details_id} of package {package_code}')
 
 
 def get_route_details_id(route_id: str, package_code: list):
