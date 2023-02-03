@@ -3,13 +3,14 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
 from re import search
 import time
+import getpass
 
 
 def add_route_details(data: list, route: list):
     driver = webdriver.Chrome('./chromedriver')
 
     # Accede a route details add
-    driver.get("https://release--api.clicoh.com/admin/driver/routedetail/add/")
+    driver.get("https://ppointapi.clicoh.com/admin/driver/routedetail/add/")
 
     driver.implicitly_wait(10)
 
@@ -48,11 +49,11 @@ def add_route_details(data: list, route: list):
         driver.find_element(By.XPATH, "//input[@value='Save']").click()
 
         if i != len(data) - 1:
-            driver.get("https://release--api.clicoh.com/admin/driver/routedetail/add/")
+            driver.get("https://ppointapi.clicoh.com/admin/driver/routedetail/add/")
 
     # Route sync
     for i in range(len(route)):
-        driver.get("https://release--api.clicoh.com/admin/driver/route/")
+        driver.get("https://ppointapi.clicoh.com/admin/driver/route/")
         driver.find_element(By.XPATH, "//input[contains(@type,'text')]").send_keys(route[i])
         driver.find_element(By.XPATH, "//input[contains(@type,'submit')]").click()
         driver.find_element(By.XPATH, "//input[contains(@name,'_selected_action')]").click()
@@ -66,7 +67,7 @@ def sync_route(route_id: list):
     driver = webdriver.Chrome('./chromedriver')
 
     # Accede a route details add
-    driver.get("https://release--api.clicoh.com/admin/driver/route/")
+    driver.get("https://ppointapi.clicoh.com/admin/driver/route/")
 
     driver.implicitly_wait(10)
 
@@ -87,5 +88,5 @@ def sync_route(route_id: list):
         select.select_by_index("2")
         driver.find_element(By.XPATH, "//button[@type='submit'][contains(.,'Go')]").click()
         if i != len(route_id) - 1:
-            driver.get("https://release--api.clicoh.com/admin/driver/route/")
+            driver.get("https://ppointapi.clicoh.com/admin/driver/route/")
 
