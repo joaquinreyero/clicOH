@@ -1,17 +1,37 @@
 import json
 import requests
 
-global token
-token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9" \
-        ".eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjkwMzgzMjM2LCJqdGkiOiIwNTE4ZjRjMTM2ODg0ZmE2OTk5MzA2NDA5NWM4Mjg3MyIsInVzZXJfaWQiOjF9.teBtp0kiVPx_tpOxzuS3TxgGfWyMU3ppeMX2YLGIAo4"
 
-global headers
-headers = {'Authorization': 'Bearer ' + token}
+def token():
+    url = "https://ppointapi.clicoh.com/api/token/"
+
+    payload = json.dumps({
+        "username": "admin",
+        "password": "P4t4g0n14-99"
+    })
+
+    headers = {
+        'Content-Type': 'application/json',
+        'Cookie': 'csrftoken=kFFFgScSe4jpIrPPYMVoqY6LuJnuaowfwUmBSI6QPUVRpxyfYcfLIGIy3NNAYuHe'
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload).json()
+
+    return response["access"]
+
+
+def headers():
+    headers = {
+        'Authorization': f'Bearer {token()}',
+        'Content-Type': 'application/json',
+        'Cookie': 'csrftoken=kFFFgScSe4jpIrPPYMVoqY6LuJnuaowfwUmBSI6QPUVRpxyfYcfLIGIy3NNAYuHe'
+    }
+    return headers
 
 
 def package_ok_for_add(package_code: str, route_id: str):
     url = f"https://ppointapi.clicoh.com/api/v1/pickup_points/packages/?order_by=-id&section=list_packages&search={package_code}"
-    response = requests.get(url, headers=headers).json()
+    response = requests.get(url, headers=headers()).json()
 
     # Check if the package exists
     if response["count"] == 0:
@@ -44,7 +64,7 @@ def package_ok_for_add(package_code: str, route_id: str):
 
 def route_ok_for_add(route_id: str):
     url = f"https://ppointapi.clicoh.com/api/v1/driver/routes/{route_id}/"
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers())
     if response.status_code != 200:
         print(f"Cant find route id {route_id}")
         return False, None
@@ -74,12 +94,7 @@ def change_state(data: list, state: str, code: list):
             "action": "change_state"
         }
     )
-    headers = {
-        'Authorization': 'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjkwNDAxMDc2LCJqdGkiOiJiZDZhMzYwN2QzNDI0YWMzYjZjODQwMzA3NmQ1MmUwZCIsInVzZXJfaWQiOjF9.K_u9S_gaVWnpWsW7R3GsLkPxfTjrvc-l-DUY7BAvrUk',
-        'Content-Type': 'application/json',
-        'Cookie': 'csrftoken=kFFFgScSe4jpIrPPYMVoqY6LuJnuaowfwUmBSI6QPUVRpxyfYcfLIGIy3NNAYuHe'
-    }
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers(), data=payload)
 
     if response.status_code != 200:
         print(f"Error trying to change {data} states to {state}")
@@ -90,7 +105,7 @@ def change_state(data: list, state: str, code: list):
 def deactivate_route_detail(route_details_id: str, package_code: str):
     url, body = f'https://ppointapi.clicoh.com/api/v1/driver/route_details/{route_details_id}/', {
         'is_active': 'false'}
-    deactivate = requests.patch(url, headers=headers, data=body)
+    deactivate = requests.patch(url, headers=headers(), data=body)
 
     if deactivate.status_code == 200:
         print(f"Route details {route_details_id} deactivated of package {package_code}")
@@ -101,7 +116,7 @@ def deactivate_route_detail(route_details_id: str, package_code: str):
 
 def get_route_details_id(route_id: str, package_code: list):
     url = f"https://ppointapi.clicoh.com/api/v1/driver/routes/{route_id}/"
-    response, response_list = requests.get(url, headers=headers), []
+    response, response_list = requests.get(url, headers=headers()), []
 
     if response.status_code != 200:
         print(f'Error cant find route {route_id}')

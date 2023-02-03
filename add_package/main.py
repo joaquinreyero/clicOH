@@ -73,6 +73,7 @@ def add_package(route_list, cells_add_package):
 
     if package_by_group_stage_3:
         change_state(package_by_group_stage_3, 'last_mile', package_code)
+        print("Testing")
 
     # Call Selenium
     if package_bot_add:
@@ -105,7 +106,7 @@ def deactivate_route_details(route_list, package_list):
             package_id_for_change.append(package_id_list[i][0])
     # Change package states and sync routes
     if package_id_for_change:
-        change_state(package_id_for_change, 'ready', package_id_for_change)
+        change_state(package_id_for_change, 'at_destination', package_id_for_change)
         route_set = set(routes_id)
         routes_id = list(route_set)
         sync_route(routes_id)
